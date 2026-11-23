@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brilliant Roots | Long A Phonics Game</title>
+<style>
+:root{--navy:#142b55;--yellow:#ffc928;--cream:#fff9e9;--green:#16834a;--red:#c43d3d}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#f7f9ff,#fff7dc);font-family:Arial,sans-serif;color:#17233b}
+.wrap{max-width:760px;margin:22px auto;padding:16px}
+.card{background:#fff;border:2px solid #e8edf7;border-radius:22px;padding:24px;box-shadow:0 10px 30px #142b5515}
+.brand{display:inline-block;background:var(--navy);color:white;font-weight:800;padding:9px 16px;border-radius:999px;letter-spacing:.5px}
+h1{color:var(--navy);font-size:clamp(27px,5vw,40px);margin:18px 0 8px}
+.sub{color:#526078;line-height:1.5}
+.progress{height:12px;background:#edf0f6;border-radius:20px;overflow:hidden;margin:20px 0 8px}
+#bar{height:100%;width:0;background:var(--yellow);transition:width .25s}
+.meta{display:flex;justify-content:space-between;color:#58647a;font-weight:700;font-size:14px}
+.prompt{background:var(--cream);border:2px dashed #f0c34c;border-radius:18px;padding:20px;text-align:center;margin:22px 0}
+.word{font-size:clamp(38px,8vw,58px);font-weight:900;color:var(--navy);letter-spacing:1px}
+.hint{font-size:15px;color:#59647a;margin-top:8px}
+.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+button{font:inherit;cursor:pointer}
+.choice{border:2px solid #dce3ef;background:#fff;border-radius:14px;padding:16px 10px;font-size:23px;font-weight:800;color:var(--navy);min-height:66px}
+.choice:hover{border-color:var(--yellow);background:#fffaf0}
+.choice:focus-visible,.main:focus-visible{outline:3px solid #4c83e8;outline-offset:3px}
+.choice.correct{background:#e9f8ef;border-color:#41a56b;color:#126b39}
+.choice.wrong{background:#fff0f0;border-color:#d66;color:#a22}
+#feedback{min-height:32px;text-align:center;font-weight:700;margin:16px 0;color:var(--navy)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.main{border:0;border-radius:999px;background:var(--navy);color:#fff;padding:13px 22px;font-weight:800}
+.secondary{border:2px solid var(--navy);border-radius:999px;background:white;color:var(--navy);padding:11px 18px;font-weight:800}
+.main:disabled{opacity:.4;cursor:not-allowed}
+#result{display:none;text-align:center;padding:15px}
+.bigscore{font-size:48px;font-weight:900;color:var(--green)}
+footer{text-align:center;color:#66718a;font-size:12px;margin:16px}
+@media(max-width:480px){.card{padding:18px}.options{gap:9px}.choice{font-size:20px;padding:13px 6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <main class="card">
+  <div class="brand">BRILLIANT ROOTS</div>
+  <h1>Long A Spelling Adventure</h1>
+  <p class="sub">Learn the long A sound /ā/. Listen to the word, then choose the correct spelling.</p>
+  <div class="meta"><span id="questionNo">Question 1 of 8</span><span id="score">⭐ Score: 0</span></div>
+  <div class="progress"><div id="bar"></div></div>
+  <section id="game">
+   <div class="prompt">
+    <div style="font-size:14px;font-weight:700;color:#8a6a17">LISTEN AND CHOOSE</div>
+    <div class="word" id="word">cake</div>
+    <div class="hint" id="hint">Which spelling matches the picture word?</div>
+    <button class="secondary" id="listen" type="button" style="margin-top:12px">🔊 Hear the word</button>
+   </div>
+   <div class="options" id="options"></div>
+   <div id="feedback" aria-live="polite">Choose the correct spelling.</div>
+   <div class="actions"><button class="main" id="next" disabled>Next question →</button></div>
+  </section>
+  <section id="result">
+   <div style="font-size:54px">🏆</div>
+   <h2>Adventure completed!</h2>
+   <div class="bigscore" id="finalScore">0 / 8</div>
+   <p id="message"></p>
+   <button class="main" id="restart">Play again</button>
+  </section>
+ </main>
+ <footer>Brilliant Roots • Learn • Practise • Shine</footer>
+</div>
+<script>
+const questions=[
+ {word:"cake",choices:["cake","cak","kaik","cack"],answer:"cake",tip:"Magic e: a_e says /ā/."},
+ {word:"rain",choices:["ran","rain","rane","rine"],answer:"rain",tip:"ai often says the long A sound."},
+ {word:"play",choices:["plai","pley","play","plae"],answer:"play",tip:"ay often says the long A sound at the end of a word."},
+ {word:"train",choices:["trane","train","trayn","trin"],answer:"train",tip:"The vowel team ai spells /ā/."},
+ {word:"name",choices:["nam","naim","name","neme"],answer:"name",tip:"The final e makes the a say its name."},
+ {word:"day",choices:["dai","day","dae","dey"],answer:"day",tip:"ay is a common spelling for /ā/ at the end."},
+ {word:"shape",choices:["shap","shaip","shape","shepe"],answer:"shape",tip:"a_e is the Magic E pattern."},
+ {word:"snail",choices:["snale","snail","snayl","snel"],answer:"snail",tip:"ai usually appears in the middle of a word."}
+];
+let index=0,score=0,locked=false;
+const $=id=>document.getElementById(id);
+function speak(text){if("speechSynthesis" in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=.82;speechSynthesis.speak(u)}}
+function render(){
+ locked=false;$("next").disabled=true;$("feedback").textContent="Choose the correct spelling.";
+ $("questionNo").textContent=`Question ${index+1} of ${questions.length}`;
+ $("score").textContent=`⭐ Score: ${score}`;$("bar").style.width=`${index/questions.length*100}%`;
+ const q=questions[index];$("word").textContent=q.word;$("hint").textContent="Which spelling is correct?";
+ const options=$("options");options.innerHTML="";
+ [...q.choices].sort(()=>Math.random()-.5).forEach(choice=>{
+  const b=document.createElement("button");b.className="choice";b.type="button";b.textContent=choice;
+  b.addEventListener("click",()=>answer(b,choice));options.appendChild(b);
+ });
+}
+function answer(button,choice){
+ if(locked)return;locked=true;const q=questions[index];
+ [...$("options").children].forEach(b=>{b.disabled=true;if(b.textContent===q.answer)b.classList.add("correct")});
+ if(choice===q.answer){score++;$("feedback").textContent="🎉 Correct! "+q.tip}
+ else{button.classList.add("wrong");$("feedback").textContent="Good try! The correct spelling is "+q.answer+". "+q.tip}
+ $("score").textContent=`⭐ Score: ${score}`;$("next").disabled=false;
+}
+$("listen").addEventListener("click",()=>speak(questions[index].word));
+$("next").addEventListener("click",()=>{
+ index++;if(index<questions.length)render();else finish();
+});
+function finish(){
+ $("game").style.display="none";$("result").style.display="block";$("bar").style.width="100%";
+ $("finalScore").textContent=`${score} / ${questions.length}`;
+ $("message").textContent=score===8?"Excellent! You are a Long A champion!":score>=5?"Well done! Practise once more to master Long A.":"Keep practising. You can do it!";
+}
+$("restart").addEventListener("click",()=>{index=0;score=0;$("result").style.display="none";$("game").style.display="block";render()});
+render();
+</script>
+</body>
+</html>
